@@ -2,20 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>{{ title }}</title>
 </head>
 <body>
 <button onclick="up()" id="btn_up">up</button>
 <button onclick="down()" id="btn_down">down</button>
-<button id="right">right</button>
-<button id="left">left</button>
+<button onclick="right()" id="btn_right">right</button>
+<button onclick="left()" id="btn_left">left</button>
 
 <script>
 btn_up.onclick = function up() {
-            window.location.reload();
+            window.open("./up");
 }
 btn_down.onclick = function down() {
-            window.location.reload();
+            window.open("./down");
+}
+btn_right.onclick = function right() {
+            window.open("./right");
+}
+btn_left.onclick = function left() {
+            window.open("./left");
 }
 </script>
 </body>
