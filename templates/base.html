@@ -5,7 +5,18 @@
     <title>Title</title>
 </head>
 <body>
+<button onclick="up()" id="btn_up">up</button>
+<button onclick="down()" id="btn_down">down</button>
+<button id="right">right</button>
+<button id="left">left</button>
 
-<script src="scripts/main.js"></script>
+<script>
+btn_up.onclick = function up() {
+            window.location.reload();
+}
+btn_down.onclick = function down() {
+            window.location.reload();
+}
+</script>
 </body>
 </html>
