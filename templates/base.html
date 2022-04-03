@@ -5,23 +5,12 @@
     <title>{{ title }}</title>
 </head>
 <body>
-<button onclick="up()" id="btn_up">up</button>
-<button onclick="down()" id="btn_down">down</button>
-<button onclick="right()" id="btn_right">right</button>
-<button onclick="left()" id="btn_left">left</button>
+<button onclick="start_game()" id="btn_start_game">Начать игру</button>
 
 <script>
-btn_up.onclick = function up() {
-            window.open("./up");
+btn_start_game.onclick = function start_game() {
+            window.open("./up","_self");
 }
-btn_down.onclick = function down() {
-            window.open("./down");
-}
-btn_right.onclick = function right() {
-            window.open("./right");
-}
-btn_left.onclick = function left() {
-            window.open("./left");
 }
 </script>
 </body>
