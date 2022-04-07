@@ -1,44 +1,38 @@
 from flask import Flask, render_template
 app = Flask(__name__)
 
-coord = (0, 0)
+url = input("input server adres:")
+board = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
 
 
 @app.route("/")
 def point():
-    return render_template("base.html", title=str(coord))
+    name = "George"
+    return render_template("menu.html", title="str(coord)", user_name=name)
 
 
-@app.route("/up")
-def up_go():
-    global coord
-    coord = (coord[0], coord[1] + 1)
-    res = str(coord)
-    return render_template("base.html", title=res)
+@app.route("/start_game")
+def start_game():
+    global board, url
+    return render_template("game_on_ready_first_step.html", url=url, help_list=board, need_to_reload="False")
 
 
-@app.route("/down")
-def down_go():
-    global coord
-    coord = (coord[0], coord[1] - 1)
-    res = str(coord)
-    return render_template("base.html", title=res)
-
-
-@app.route("/right")
-def right_go():
-    global coord
-    coord = (coord[0] + 1, coord[1])
-    res = str(coord)
-    return render_template("base.html", title=res)
-
-
-@app.route("/left")
-def left_go():
-    global coord
-    coord = (coord[0] - 1, coord[1])
-    res = str(coord)
-    return render_template("base.html", title=res)
+@app.route("/start_game/change/<int:position>")
+def change(position):
+    global board, url
+    board[position] = "█"
+    print(position)
+    app.route("../start_game")
+    return render_template("game_on_ready_first_step.html", url=url, help_list=board, need_to_reload="True")
 
 
 if __name__ == '__main__':
