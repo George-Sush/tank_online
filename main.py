@@ -1,5 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect
+from flask_login import LoginManager
+from data.user import User
+from data.Login_Form import LoginForm
+from data.db_session import global_init, create_session
+from flask_login import login_user, login_required, logout_user
 app = Flask(__name__)
+login_manager = LoginManager()
+login_manager.init_app(app)
+
 
 url = input("input server adres:")
 board = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
@@ -12,6 +20,39 @@ board = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
          'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
          'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
          'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect("/base")
+
+
+@app.route('/base')
+def base():
+    return render_template("/base.html")
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        db_sess = create_session()
+        user = db_sess.query(User).filter(User.email == form.email.data).first()
+        if user and user.hashed_password == form.password.data:
+            login_user(user, remember=form.remember_me.data)
+            return redirect("/base")
+        return render_template('login.html',
+                               message="Неправильный логин или пароль",
+                               form=form)
+    return render_template('login.html', title='Авторизация', form=form)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    db_sess = create_session()
+    return db_sess.query(User).get(user_id)
 
 
 @app.route("/")
@@ -36,4 +77,5 @@ def change(position):
 
 
 if __name__ == '__main__':
+    global_init("db/users.db")
     app.run('127.0.0.1', 80)
