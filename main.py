@@ -1,5 +1,7 @@
 from flask import Flask, render_template, redirect
 from flask_login import LoginManager
+import sqlite3
+import json
 from data.user import User
 from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
@@ -76,6 +78,42 @@ def change(position):
     return render_template("game_on_ready_first_step.html", url=url, help_list=board, need_to_reload="True")
 
 
+def add_new_user(name="test_user", email="test@test.test", hashed_password="test123"):
+    board = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
+             'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
+    user = User()
+    session = create_session()
+
+    user.name = name
+    user.email = email
+    user.hashed_password = hashed_password
+
+    session.add(user)
+    session.commit()
+
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    result = cur.execute(f"""SELECT id FROM users WHERE name == '{name}'""").fetchall()
+    with open("db/boards.json", "r") as read_file:
+        file = json.load(read_file)
+        read_file.close()
+    with open("db/boards.json", "w") as write_file:
+        board_copy = board.copy()
+        file[str(result[0][0])] = [board_copy, None]
+        json.dump(file, write_file)
+        write_file.close()
+
+
 if __name__ == '__main__':
     global_init("db/users.db")
+    # add_new_user() обавление пользователя со значением имя(уникальное), почта(уникальное), пароль.
+    # В базе данных есть тестовый пользователь
     app.run('127.0.0.1', 80)
