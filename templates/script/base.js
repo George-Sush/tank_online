@@ -143,6 +143,13 @@ function set_ship_size(size) {
     alert("Корабль длины " + size);
 }
 function complete() {
+    if (one+two+free+four==0){
+    alert("Вы расставили все корабли");
     alert(board);
+    } else {
+    alert("Закончите расстановку кораблей");
+    alert(board);
+    }
+
 }
 repeat_stuff();
