@@ -1,17 +1,17 @@
-from flask import Flask, render_template, redirect
-from flask_login import LoginManager
-import sqlite3
-import json
-
-from werkzeug.security import generate_password_hash, check_password_hash
-
+from flask import Flask, render_template, redirect, make_response, session
+from flask_login import LoginManager, login_user, login_required, logout_user
 from data import db_session
 from data.RegisterForm import RegisterForm
-from data.user import User
+from requests import request
+from data.users import *
 from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
-from flask_login import login_user, login_required, logout_user
+import datetime
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
+    days=30
+)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -37,7 +37,11 @@ def login():
     if form.validate_on_submit():
         db_sess = create_session()
         user = db_sess.query(User).filter(User.email == form.email.data).first()
-        if user and user.hashed_password == form.password.data:
+        if user:
+            print(1)
+        print(user.hashed_password)
+        print(form.password.data)
+        if user and check_password_hash(user.hashed_password, form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect("/base")
         return render_template('login.html',
@@ -76,42 +80,6 @@ def change(position):
     return render_template("game_on_ready_first_step.html", url=url, help_list=board, need_to_reload="True")
 
 
-# def add_new_user(name="test_user", email="test@test.test", hashed_password="test123"):
-#     user = User()
-#     session = create_session()
-#
-#     user.name = name
-#     user.email = email
-#     user.hashed_password = hashed_password
-#
-#     try:
-#         session.add(user)
-#         session.commit()
-#     except sqlite3.IntegrityError:
-#         return render_template("register.html", message="Неправильный логин или пароль")
-#
-#
-#     con = sqlite3.connect("db/users.db")
-#     cur = con.cursor()
-#     result = cur.execute(f"""SELECT id FROM users WHERE name == '{name}'""").fetchall()
-#     with open("db/boards.json", "r") as read_file:
-#         file = json.load(read_file)
-#         read_file.close()
-#     with open("db/boards.json", "w") as write_file:
-#         board_copy = board.copy()
-#         file[str(result[0][0])] = [board_copy, None]
-#         json.dump(file, write_file)
-#         write_file.close()
-
-
-def set_password(self, password):
-    self.hashed_password = generate_password_hash(password)
-
-
-def check_password(self, password):
-    return check_password_hash(self.hashed_password, password)
-
-
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
     form = RegisterForm()
@@ -128,13 +96,37 @@ def reqister():
         user = User(
             name=form.name.data,
             email=form.email.data,
-            about=form.about.data
+            # about=form.about.data
         )
         user.set_password(form.password.data)
         db_sess.add(user)
         db_sess.commit()
         return redirect('/login')
     return render_template('register.html', title='Регистрация', form=form)
+
+
+@app.route("/cookie_test")
+def cookie_test():
+    visits_count = int(request.cookies.get("visits_count", 0))
+    if visits_count:
+        res = make_response(
+            f"Вы пришли на эту страницу {visits_count + 1} раз")
+        res.set_cookie("visits_count", str(visits_count + 1),
+                       max_age=60 * 60 * 24 * 365 * 2)
+    else:
+        res = make_response(
+            "Вы пришли на эту страницу в первый раз за последние 2 года")
+        res.set_cookie("visits_count", '1',
+                       max_age=60 * 60 * 24 * 365 * 2)
+    return res
+
+
+@app.route("/session_test")
+def session_test():
+    visits_count = session.get('visits_count', 0)
+    session['visits_count'] = visits_count + 1
+    return make_response(
+        f"Вы пришли на эту страницу {visits_count + 1} раз")
 
 
 if __name__ == '__main__':
