@@ -17,16 +17,6 @@ login_manager.init_app(app)
 
 
 url = input("input server adres:")
-board = ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O',
-         'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O']
 
 
 @app.route('/logout')
@@ -120,6 +110,7 @@ def set_password(self, password):
 
 def check_password(self, password):
     return check_password_hash(self.hashed_password, password)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
