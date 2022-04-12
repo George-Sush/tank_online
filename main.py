@@ -17,7 +17,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-url = input()  # "https://batle-ships-online.herokuapp.com/"  # input("input server adres:")
+url = input("input server adres: ")  # "https://batle-ships-online.herokuapp.com/"  # input()
 
 
 @app.route('/logout')
@@ -54,10 +54,9 @@ def load_user(user_id):
 
 
 @app.route("/")
-@login_required
 def point():
-    name = "George"
-    return render_template("menu.html", title="str(coord)", user_name=name)
+    # name = "George"
+    return redirect("/base")  # render_template("menu.html", title="str(coord)", user_name=name)
 
 
 @app.route("/start_game")
