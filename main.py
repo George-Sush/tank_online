@@ -3,6 +3,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user
 from data import db_session
 from data.RegisterForm import RegisterForm
 from requests import request
+import os
 from data.users import *
 from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
@@ -16,7 +17,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-url = input("input server adres:")
+url = "https://batle-ships-online.herokuapp.com/"  # input("input server adres:")
 
 
 @app.route('/logout')
@@ -132,4 +133,6 @@ if __name__ == '__main__':
     global_init("db/users.db")
     # add_new_user() обавление пользователя со значением имя(уникальное), почта(уникальное), пароль.
     # В базе данных есть тестовый пользователь
-    app.run('127.0.0.1', 80)
+    port = int(os.environ.get("PORT", 80))
+    app.run(host='0.0.0.0', port=port)
+    # app.run('127.0.0.1', 80)
