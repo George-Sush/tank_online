@@ -1,13 +1,16 @@
 from flask import Flask, render_template, redirect, make_response, session
-from flask_login import LoginManager, login_user, login_required, logout_user
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
+import sqlite3
 from data.RegisterForm import RegisterForm
 from requests import request
 import os
 from data.users import *
+# from data.games import Game
 from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
 import datetime
+users_game = []
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
@@ -29,6 +32,7 @@ def logout():
 
 @app.route('/base')
 def base():
+    print(current_user)
     return render_template("/base.html")
 
 
@@ -66,13 +70,13 @@ def start_game():
     return render_template("game_on_ready_first_step.html", url=url)
 
 
-@app.route("/start_game/change/<int:position>")
-@login_required
-def change(position):
-    global url
-    # board[position] = "█"
-    app.route("../start_game")
-    return render_template("game_on_ready_first_step.html", url=url, need_to_reload="True")
+# @app.route("/start_game/change/<int:position>")
+# @login_required
+# def change(position):
+#     global url
+#     # board[position] = "█"
+#     app.route("../start_game")
+#     return render_template("game_on_ready_first_step.html", url=url, need_to_reload="True")
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -121,6 +125,44 @@ def session_test():
     session['visits_count'] = visits_count + 1
     return make_response(
         f"Вы пришли на эту страницу {visits_count + 1} раз")
+
+
+# @app.route("/search_game")
+# def new_game(user1):
+#     con = sqlite3.connect("db/users.db")
+#     cur = con.cursor()
+#     result = cur.execute(f"""SELECT id FROM users
+#                 WHERE game_status == True AND id != {user1}""").fetchall()
+#     if len(result) == 0:
+#         print("Игроков нет, ждите")
+#     else:
+#         user2
+#     session = create_session()
+#     game = Game(
+#         users=f"{user1},{user2}"
+#     )
+
+
+@app.route("/search")
+@login_required
+def what_to_do():
+    return render_template("search.html")
+
+
+@app.route("/new_game")
+@login_required
+def new_game():
+    if len(users_game) == 0:
+        users_game.append(current_user.id)
+        return render_template("wait.html")
+    else:
+        user2 = users_game.pop(0)
+        res = create_game(current_user.id, user2)
+        return render_template("game_on_ready_second_step.html", message=res) # сразу активная игра
+
+
+def create_game(user1, user2):
+    return f"{user1},{user2}"
 
 
 if __name__ == '__main__':
