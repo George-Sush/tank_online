@@ -9,6 +9,8 @@
 <!--<h4>И на Марсе будут яблони цвести!</h4>-->
 {% if current_user.is_authenticated %}
     <a class="navbar-brand" href="/logout">{{ current_user.name }}</a>
+    <br>
+    <a class="btn start-game" href="/start_game">Начать игру!</a>
 {% else %}
     <p>
         <a class="btn btn-primary " href="/register">Зарегистрироваться</a>

@@ -17,7 +17,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-url = "https://batle-ships-online.herokuapp.com/"  # input("input server adres:")
+url = input()  # "https://batle-ships-online.herokuapp.com/"  # input("input server adres:")
 
 
 @app.route('/logout')
@@ -38,10 +38,6 @@ def login():
     if form.validate_on_submit():
         db_sess = create_session()
         user = db_sess.query(User).filter(User.email == form.email.data).first()
-        if user:
-            print(1)
-        print(user.hashed_password)
-        print(form.password.data)
         if user and check_password_hash(user.hashed_password, form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect("/base")
@@ -67,18 +63,17 @@ def point():
 @app.route("/start_game")
 @login_required
 def start_game():
-    global board, url
-    return render_template("game_on_ready_first_step.html", url=url, help_list=board, need_to_reload="False")
+    global url
+    return render_template("game_on_ready_first_step.html", url=url)
 
 
 @app.route("/start_game/change/<int:position>")
 @login_required
 def change(position):
-    global board, url
-    board[position] = "█"
-    print(position)
+    global url
+    # board[position] = "█"
     app.route("../start_game")
-    return render_template("game_on_ready_first_step.html", url=url, help_list=board, need_to_reload="True")
+    return render_template("game_on_ready_first_step.html", url=url, need_to_reload="True")
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -133,6 +128,6 @@ if __name__ == '__main__':
     global_init("db/users.db")
     # add_new_user() обавление пользователя со значением имя(уникальное), почта(уникальное), пароль.
     # В базе данных есть тестовый пользователь
-    port = int(os.environ.get("PORT", 80))
-    app.run(host='0.0.0.0', port=port)
-    # app.run('127.0.0.1', 80)
+    # port = int(os.environ.get("PORT", 80))
+    # app.run(host='0.0.0.0', port=port)
+    app.run('127.0.0.1', 80)
