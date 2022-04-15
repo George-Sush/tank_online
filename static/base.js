@@ -1,16 +1,14 @@
 alert("js агружен");
 var ship_size = 1;
+var field_size = 10
 var flag = false;
+available_ships = {1: 4, 2: 3, 3: 2, 4: 1}
 const board = [];
-var one = 4;
-var two = 3;
-var free = 2;
-var four = 1;
 var need_to_go = true;
 function repeat_stuff()
 {
-    for (var y = 0; y < 10; y++) {
-        for (var x = 0; x < 10; x++){
+    for (var y = 0; y < field_size; y++) {
+        for (var x = 0; x < field_size; x++){
             document.write('<button onclick="put('+x+','+y+')", id="'+x+'_'+y+'";">🟦</button>');
         }
         document.write('<br/>');
@@ -23,111 +21,60 @@ function repeat_stuff()
     document.write('<button onclick="set_ship_size(1);">⬛</button>');
     document.write('<button onclick="complete();">complete</button>');
 }
-function put(x, y)
-{
-    if (flag==false) {
-    if (x + ship_size - 1 < 10) {
-        for (var i = Math.max(x - 1, 0); i < Math.min(x + ship_size + 1, 9); i++) {
-            if (document.getElementById(i+"_"+y).innerHTML=='⬛' ||  document.getElementById(i+"_"+Math.min(y + 1, 9)).innerHTML=='⬛' || document.getElementById(i+"_"+Math.max(y - 1, 0)).innerHTML=='⬛') {
-                alert("Вы не можете разместить здесь свой корабль");
-                need_to_go = false;
-                break;
-            }
-        }
-        if (need_to_go==true) {
-        if (ship_size==1) {
-            if (one==0) {
-                alert("У вас закончились корабли этого типа");
-                need_to_go=false;
-            } else {
-                one = one - 1;
-            }
-        } else if (ship_size==2) {
-            if (two==0) {
-                alert("У вас закончились корабли этого типа");
-                need_to_go=false;
-            } else {
-                two = two - 1;
-            }
-        } else if (ship_size==3) {
-            if (free==0) {
-                alert("У вас закончились корабли этого типа");
-                need_to_go=false;
-            } else {
-                free = free - 1;
-            }
-        } else {
-            if (four==0) {
-                alert("У вас закончились корабли этого типа");
-                need_to_go=false;
-            } else {
-                four = four - 1;
-            }
-        }
-        if (need_to_go==true) {
-        for (var i = x; i < x + ship_size; i++) {
-            board.push([i, y]);
-            document.getElementById(i+"_"+y).innerHTML='⬛';
-        }
-        }
-        }
+function check_ship(x, y) {
+    if (available_ships[ship_size] <= 0) return 0;
+    if (x < 0 || (x + ship_size) > field_size ||
+        y < 0 || (y + ship_size) > field_size) {
+        return -1;
+    }
+    let min_x = x - 1;
+    let min_y = y - 1;
+    if (flag) {
+        max_x = x + 1;
+        max_y = y + ship_size;
+    } else {
+        max_x = x + ship_size;
+        max_y = y + 1;
+    }
+    for (let x = min_x; x <= max_x; x++)
+    for (let y = min_y; y <= max_y; y++)
+    {
+        if (check_place_taken(x, y)) return -2;
+    }
+    return 1;
+}
+function check_place_taken(x, y) {
+    let element = document.getElementById(x+"_"+y);
+    if (element && element.innerHTML == '⬛') return true;
+    return false;
+}
+function put(x, y) {
+    let check = check_ship(x, y);
+    if (check > 0)
+    {
+        place_ship(x, y);
+    } else if (check == 0) {
+        alert("У вас закончились корабли этого типа");
     } else {
         alert("Вы не можете разместить здесь свой корабль");
     }
-    } else {
-        if (y + ship_size - 1 < 10) {
-            for (var i = Math.max(y - 1, 0); i < Math.min(y + ship_size + 1, 9); i++) {
-                if (document.getElementById(x+"_"+i).innerHTML=='⬛' ||  document.getElementById(Math.min(x + 1, 9)+"_"+i).innerHTML=='⬛' || document.getElementById(Math.max(x - 1, 0)+"_"+i).innerHTML=='⬛') {
-                    alert("Вы не можете разместить здесь свой корабль");
-                    need_to_go = false;
-                    break;
-                }
-            }
-            if (need_to_go==true) {
-            if (ship_size==1) {
-                if (one==0) {
-                    alert("У вас закончились корабли этого типа");
-                    need_to_go=false;
-                } else {
-                    one = one - 1;
-                }
-            } else if (ship_size==2) {
-                if (two==0) {
-                    alert("У вас закончились корабли этого типа");
-                    need_to_go=false;
-                } else {
-                    two = two - 1;
-                }
-            } else if (ship_size==3) {
-                if (free==0) {
-                    alert("У вас закончились корабли этого типа");
-                    need_to_go=false;
-                } else {
-                    free = free - 1;
-                }
-            } else {
-                if (four==0) {
-                    alert("У вас закончились корабли этого типа");
-                    need_to_go=false;
-                } else {
-                    four = four - 1;
-                }
-            }
-            if (need_to_go==true) {
-            for (var i = y; i < y + ship_size; i++) {
-                board.push([x, i]);
-                document.getElementById(x+"_"+i).innerHTML='⬛';
-            }
-            }
-            }
-        } else {
-            alert("Вы не можете разместить здесь свой корабль");
-        }
-    }
-    need_to_go = true;
 }
-function rotate_ship()
-{
+function place_ship(x, y) {
+    let min_x = x;
+    let min_y = y;
+    if (flag) {
+        max_y = y + ship_size;
+    } else {
+        max_x = x + ship_size;
+    }
+    for (var x = min_x; x < max_x; x++)
+    for (var y = min_y; y < max_y; y++) {
+        board.push([x, y]);
+        document.getElementById(x+"_"+y).innerHTML='⬛';
+    }
+    available_ships[ship_size] = available_ships[ship_size] - 1
+}
+function rotate_ship() {
     if (flag==false) {
     flag = true;
     alert("Повернули корабль, теперь он вертикальный");
@@ -143,7 +90,8 @@ function set_ship_size(size) {
     alert("Корабль длины " + size);
 }
 function complete() {
-    if (one+two+free+four==0){
+    if (available_ships[0]+available_ships[1]+available_ships[2]
+        +available_ships[3]==0) {
     alert("Вы расставили все корабли");
     alert(board);
     window.open("./new_game","_self");
