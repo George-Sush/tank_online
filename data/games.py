@@ -7,4 +7,5 @@ class Game(SqlAlchemyBase):
 
     id = sqlalchemy.Column(sqlalchemy.Integer,
                            primary_key=True, autoincrement=True)
-    users = sqlalchemy.Column(sqlalchemy.String)
+    user_1 = sqlalchemy.Column(sqlalchemy.String, nullable=False)
+    user_2 = sqlalchemy.Column(sqlalchemy.String, nullable=False)

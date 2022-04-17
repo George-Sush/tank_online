@@ -6,7 +6,7 @@ from data.RegisterForm import RegisterForm
 from requests import request
 import os
 from data.users import *
-# from data.games import Game
+from data.games import Game
 from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
 import datetime
@@ -68,15 +68,6 @@ def point():
 def start_game():
     global url
     return render_template("game_on_ready_first_step.html", url=url)
-
-
-# @app.route("/start_game/change/<int:position>")
-# @login_required
-# def change(position):
-#     global url
-#     # board[position] = "█"
-#     app.route("../start_game")
-#     return render_template("game_on_ready_first_step.html", url=url, need_to_reload="True")
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -143,12 +134,6 @@ def session_test():
 #     )
 
 
-@app.route("/search")
-@login_required
-def what_to_do():
-    return render_template("search.html")
-
-
 @app.route("/new_game")
 @login_required
 def new_game():
@@ -157,12 +142,40 @@ def new_game():
         return render_template("wait.html")
     else:
         user2 = users_game.pop(0)
-        res = create_game(current_user.id, user2)
-        return render_template("game_on_ready_second_step.html", message=res) # сразу активная игра
+        create_game(current_user.id, user2)
+        return render_template("active_game.html")  # сразу активная игра
+
+
+@app.route("/wait")
+@login_required
+def need_wait_or_not():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
+    cur.close()
+    if len(result) > 0:
+        return render_template("active_game.html")
+    return render_template("wait.html")
 
 
 def create_game(user1, user2):
-    return f"{user1},{user2}"
+    db_sess = create_session()
+    game = Game(
+        user1=user1,
+        user2=user2,
+    )
+    db_sess.add(game)
+    db_sess.commit()
+
+
+def end_game(id):
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    try:
+        cur.execute(f"""DELETE FROM games WHERE id == {id}""")
+    except Exception:
+        print(f"Нет игры с id {id}")
+    cur.close()
 
 
 if __name__ == '__main__':
