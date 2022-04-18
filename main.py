@@ -183,6 +183,7 @@ def need_wait_or_not():
     if len(result) > 0:
         print(str(users_b[str(current_user.id)]))
         cur.execute(f"""UPDATE games SET field_2 = '{str(users_b[str(current_user.id)])}' WHERE user_2 = {current_user.id}""")
+        con.commit()
         cur.close()
         return render_template("active_game.html")
     cur.close()
