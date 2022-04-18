@@ -181,7 +181,8 @@ def need_wait_or_not():
     cur = con.cursor()
     result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
     if len(result) > 0:
-        cur.execute(f"""UPDATE games SET field_2 = '{str(users_b[str(current_user.id)])}' WHERE user_2 == {current_user.id}""")
+        print(str(users_b[str(current_user.id)]))
+        cur.execute(f"""UPDATE games SET field_2 = '{str(users_b[str(current_user.id)])}' WHERE user_2 = {current_user.id}""")
         cur.close()
         return render_template("active_game.html")
     cur.close()
