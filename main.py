@@ -1,6 +1,7 @@
 from flask import Flask, render_template, redirect, make_response, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
+from itertools import zip_longest
 import sqlite3
 from data.RegisterForm import RegisterForm
 from requests import request
@@ -11,6 +12,7 @@ from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
 import datetime
 users_game = []
+users_b = {}
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
@@ -134,16 +136,42 @@ def session_test():
 #     )
 
 
-@app.route("/new_game")
+@app.route("/new_game/<board>")
 @login_required
-def new_game():
+def new_game(board):
+    board = board.split(",")
+    print(len(board))
+    i_ = iter(board)
+    board = list(zip_longest(i_, i_))
+    print(board)
+    result = []
+    for y in range(10):
+        res = []
+        for x in range(10):
+            if (x, y) in board:
+                res.append("⬛")
+            else:
+                res.append("🟦")
+        result.append(res)
     if len(users_game) == 0:
         users_game.append(current_user.id)
-        return render_template("wait.html")
+        print(current_user.id)
+        users_b[str(current_user.id)] = result
+        return redirect("/wait")  # "wait.html")
     else:
         user2 = users_game.pop(0)
-        create_game(current_user.id, user2)
+        if user2 == current_user.id:
+            print("id Совпадают")
+            return
+        print(user2, current_user.id)
+        create_game(current_user.id, user2, result)
         return render_template("active_game.html")  # сразу активная игра
+
+
+@app.route("/check")
+@login_required
+def need():
+    return redirect("/wait")
 
 
 @app.route("/wait")
@@ -152,17 +180,20 @@ def need_wait_or_not():
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
-    cur.close()
     if len(result) > 0:
+        cur.execute(f"""UPDATE games SET field_2 = '{str(users_b[str(current_user.id)])}' WHERE user_2 == {current_user.id}""")
+        cur.close()
         return render_template("active_game.html")
-    return render_template("wait.html")
+    cur.close()
+    return render_template("wait.html", url=url)
 
 
-def create_game(user1, user2):
+def create_game(user1, user2, board_1):
     db_sess = create_session()
     game = Game(
-        user1=user1,
-        user2=user2,
+        user_1=int(user1),
+        user_2=int(user2),
+        field_1=str(board_1),
     )
     db_sess.add(game)
     db_sess.commit()

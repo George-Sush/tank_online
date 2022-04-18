@@ -23,10 +23,6 @@ function repeat_stuff()
 }
 function check_ship(x, y) {
     if (available_ships[ship_size] <= 0) return 0;
-    if (x < 0 || (x + ship_size) > field_size ||
-        y < 0 || (y + ship_size) > field_size) {
-        return -1;
-    }
     let min_x = x - 1;
     let min_y = y - 1;
     if (flag) {
@@ -35,6 +31,10 @@ function check_ship(x, y) {
     } else {
         max_x = x + ship_size;
         max_y = y + 1;
+    }
+    if (x < 0 || max_x > field_size ||
+        y < 0 || max_y > field_size) {
+        return -1;
     }
     for (let x = min_x; x <= max_x; x++)
     for (let y = min_y; y <= max_y; y++)
@@ -90,11 +90,11 @@ function set_ship_size(size) {
     alert("Корабль длины " + size);
 }
 function complete() {
-    if (available_ships[0]+available_ships[1]+available_ships[2]
+    if (available_ships[4]+available_ships[1]+available_ships[2]
         +available_ships[3]==0) {
     alert("Вы расставили все корабли");
     alert(board);
-    window.open("./new_game","_self");
+    window.open("./new_game/"+board,"_self");
     } else {
     alert("Закончите расстановку кораблей");
     alert(board);
