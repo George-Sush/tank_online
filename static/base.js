@@ -15,11 +15,17 @@ function repeat_stuff()
     }
     document.write('<br/>');
     document.write('<button onclick="rotate_ship()", id="rotate";">🢂</button>');
-    document.write('<button onclick="set_ship_size(4);">⬛⬛⬛⬛</button>');
-    document.write('<button onclick="set_ship_size(3);">⬛⬛⬛</button>');
-    document.write('<button onclick="set_ship_size(2);">⬛⬛</button>');
-    document.write('<button onclick="set_ship_size(1);">⬛</button>');
+    document.write('<button id="4", disabled, onclick="set_ship_size(4);">⬛⬛⬛⬛</button>');
+    document.write('<button id="3", disabled, onclick="set_ship_size(3);">⬛⬛⬛</button>');
+    document.write('<button id="2", disabled, onclick="set_ship_size(2);">⬛⬛</button>');
+    document.write('<button id="1", disabled, onclick="set_ship_size(1);">⬛</button>');
+    document.getElementById('1').disabled = false;
+    document.getElementById('2').disabled = false;
+    document.getElementById('3').disabled = false;
+    document.getElementById('4').disabled = false;
     document.write('<button onclick="complete();">complete</button>');
+
+    document.write('<label id="alert_label"></label>');
 }
 function check_ship(x, y) {
     if (available_ships[ship_size] <= 0) return 0;
@@ -54,9 +60,9 @@ function put(x, y) {
     {
         place_ship(x, y);
     } else if (check == 0) {
-        alert("У вас закончились корабли этого типа");
+        document.getElementById("alert_label").innerHTML="У вас закончились корабли этого типа";
     } else {
-        alert("Вы не можете разместить здесь свой корабль");
+        document.getElementById("alert_label").innerHTML="Вы не можете разместить здесь свой корабль";
     }
 }
 function place_ship(x, y) {
@@ -73,31 +79,34 @@ function place_ship(x, y) {
         document.getElementById(x+"_"+y).innerHTML='⬛';
     }
     available_ships[ship_size] = available_ships[ship_size] - 1
+    if (available_ships[ship_size]==0) {
+        document.getElementById(ship_size).disabled = true;
+    }
 }
 function rotate_ship() {
     if (flag==false) {
     flag = true;
-    alert("Повернули корабль, теперь он вертикальный");
+    document.getElementById("alert_label").innerHTML="Повернули корабль, теперь он вертикальный";
     document.getElementById("rotate").innerHTML='🢃';
     } else {
     flag = false;
-    alert("Повернули корабль, теперь он горизонтальный");
+    document.getElementById("alert_label").innerHTML="Повернули корабль, теперь он горизонтальный";
     document.getElementById("rotate").innerHTML='🢂';
     }
 }
 function set_ship_size(size) {
     ship_size = size;
-    alert("Корабль длины " + size);
+    document.getElementById("alert_label").innerHTML="Корабль длины " + size;
 }
 function complete() {
     if (available_ships[4]+available_ships[1]+available_ships[2]
         +available_ships[3]==0) {
-    alert("Вы расставили все корабли");
-    alert(board);
+    document.getElementById("alert_label").innerHTML="Вы расставили все корабли";
+//    alert(board);
     window.open("./new_game/"+board,"_self");
     } else {
-    alert("Закончите расстановку кораблей");
-    alert(board);
+    document.getElementById("alert_label").innerHTML="Закончите расстановку кораблей";
+//    alert(board);
     }
 }
 repeat_stuff();

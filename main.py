@@ -1,3 +1,4 @@
+import json
 from flask import Flask, render_template, redirect, make_response, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
@@ -139,6 +140,7 @@ def session_test():
 @app.route("/new_game/<board>")
 @login_required
 def new_game(board):
+    json_obj = {}
     board = board.split(",")
     print(len(board))
     i_ = iter(board)
@@ -148,24 +150,26 @@ def new_game(board):
     for y in range(10):
         res = []
         for x in range(10):
-            if (x, y) in board:
-                res.append("⬛")
+            if tuple([str(x), str(y)]) in board:
+                res.append("1")  # 1 это корабль
             else:
-                res.append("🟦")
+                res.append("0")  # 0 это вода
         result.append(res)
+    print(result)
+    json_obj["data"] = result
     if len(users_game) == 0:
         users_game.append(current_user.id)
         print(current_user.id)
-        users_b[str(current_user.id)] = result
+        users_b[str(current_user.id)] = json_obj  # result
         return redirect("/wait")  # "wait.html")
     else:
         user2 = users_game.pop(0)
         if user2 == current_user.id:
             print("id Совпадают")
-            return
+            return "id Совпадают"
         print(user2, current_user.id)
-        create_game(current_user.id, user2, result)
-        return render_template("active_game.html")  # сразу активная игра
+        create_game(current_user.id, user2, json_obj)  # result
+        return render_template("active_game.html", board=result, second_user_know=False)  # сразу активная игра
 
 
 @app.route("/check")
@@ -182,12 +186,23 @@ def need_wait_or_not():
     result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
     if len(result) > 0:
         print(str(users_b[str(current_user.id)]))
-        cur.execute(f"""UPDATE games SET field_2 = '{str(users_b[str(current_user.id)])}' WHERE user_2 = {current_user.id}""")
+        board = str(users_b[str(current_user.id)])
+        print(board)
+        cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_2 = {current_user.id}""")
         con.commit()
+        res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
+        print(res[0][0])
+        result = eval(res[0][0])
+        print(result)
         cur.close()
-        return render_template("active_game.html")
+        return render_template("active_game.html", user_board=board, another_user_board=result["data"])
     cur.close()
     return render_template("wait.html", url=url)
+
+
+@app.route("/start")
+@login_required
+def
 
 
 def create_game(user1, user2, board_1):
