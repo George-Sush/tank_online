@@ -11,3 +11,4 @@ class Game(SqlAlchemyBase):
     user_2 = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
     field_1 = sqlalchemy.Column(sqlalchemy.String)
     field_2 = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    flag = sqlalchemy.Column(sqlalchemy.Boolean, default=True)

@@ -3,11 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <script>
-
+        var turn = {{ your_turn }}
+        function repeat_stuff() {
+            for (var y = 0; y < field_size; y++) {
+                for (var x = 0; x < field_size; x++){
+                    document.write('<button id="'+x+'_1_'+y+'";">{{ user_board[y][x] }}</button>');
+                }
+                document.write('<label>       </label>');
+                for (var x = 0; x < field_size; x++){
+                    if ({{ another_user_board[y][x] }}=="⬛") {
+                    document.write('<button disabled, onclick="fire('+x+','+y+')", id="'+x+'_2_'+y+'";">🟦</button>');
+                    } else {
+                    document.write('<button disabled, onclick="fire('+x+','+y+')", id="'+x+'_2_'+y+'";">{{ another_user_board[y][x] }}</button>');
+                    }
+                    if (turn) {
+                        document.getElementById(x+"_2_"+y).disabled = false;
+                    }
+                    if (document.getElementById(x+"_2_"+y).innerHTML=="⚪") {
+                        document.getElementById(x+"_2_"+y).disabled = true;
+                    }
+                }
+                document.write('<br/>');
+            }
+        }
+        function fire(x, y) {
+            if (turn) {
+                window.open("/fire/"+x+"_"+y, "_self");
+            } else {
+                alert("Сбой, сейчас не ваш ход!");
+            }
+        }
+        function check_new() {
+            window.open("/check_new", "_self");
+        }
+        if (!turn) {
+            setTimeout(check_new, 10000);
+        }
+        repeat_stuff();
     </script>
     <title>Title</title>
 </head>
 <body>
-
 </body>
 </html>

@@ -121,22 +121,6 @@ def session_test():
         f"Вы пришли на эту страницу {visits_count + 1} раз")
 
 
-# @app.route("/search_game")
-# def new_game(user1):
-#     con = sqlite3.connect("db/users.db")
-#     cur = con.cursor()
-#     result = cur.execute(f"""SELECT id FROM users
-#                 WHERE game_status == True AND id != {user1}""").fetchall()
-#     if len(result) == 0:
-#         print("Игроков нет, ждите")
-#     else:
-#         user2
-#     session = create_session()
-#     game = Game(
-#         users=f"{user1},{user2}"
-#     )
-
-
 @app.route("/new_game/<board>")
 @login_required
 def new_game(board):
@@ -151,9 +135,9 @@ def new_game(board):
         res = []
         for x in range(10):
             if tuple([str(x), str(y)]) in board:
-                res.append("1")  # 1 это корабль
+                res.append("⬛")  # ⬛ это корабль
             else:
-                res.append("0")  # 0 это вода
+                res.append("🟦")  # 🟦 это вода
         result.append(res)
     print(result)
     json_obj["data"] = result
@@ -169,7 +153,7 @@ def new_game(board):
             return "id Совпадают"
         print(user2, current_user.id)
         create_game(current_user.id, user2, json_obj)  # result
-        return render_template("active_game.html", board=result, second_user_know=False)  # сразу активная игра
+        return redirect("/battle")  # сразу активная игра
 
 
 @app.route("/check")
@@ -190,19 +174,50 @@ def need_wait_or_not():
         print(board)
         cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_2 = {current_user.id}""")
         con.commit()
-        res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
-        print(res[0][0])
-        result = eval(res[0][0])
-        print(result)
+        # res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
+        # print(res[0][0])
+        # result = eval(res[0][0])
+        # print(result)
         cur.close()
-        return render_template("active_game.html", user_board=board, another_user_board=result["data"])
+        return redirect("/start")
+
     cur.close()
     return render_template("wait.html", url=url)
 
 
+@app.route("/battle")
+@login_required
+def battle_now():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * FROM games WHERE user_1 = {current_user.id} OR user_2 = {current_user.id}""").fetchall()
+    if res[1] == current_user.id:
+        if res[-1]:
+            flag = True
+        else:
+            flag = False
+        board = res[3]
+        board_another = res[4]
+    else:
+        if res[-1]:
+            flag = False
+        else:
+            flag = True
+        board = res[4]
+        board_another = res[3]
+    return render_template("active_game.html", user_board=board, another_user_board=board_another, flag=flag)
+
+
 @app.route("/start")
 @login_required
-def
+def go():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
+    result = eval(res[0][0])
+    board = str(users_b[str(current_user.id)])
+    cur.close()
+    return render_template("active_game.html", user_board=board, another_user_board=result["data"], flag=False)
 
 
 def create_game(user1, user2, board_1):
@@ -221,15 +236,23 @@ def end_game(id):
     cur = con.cursor()
     try:
         cur.execute(f"""DELETE FROM games WHERE id == {id}""")
+        con.commit()
     except Exception:
         print(f"Нет игры с id {id}")
     cur.close()
 
 
+def clear_games_table():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    cur.execute("""DELETE FROM games""")
+    con.commit()
+    cur.close()
+
+
 if __name__ == '__main__':
     global_init("db/users.db")
-    # add_new_user() обавление пользователя со значением имя(уникальное), почта(уникальное), пароль.
-    # В базе данных есть тестовый пользователь
+    clear_games_table()  # могут возникать ошибки, если не почистить таблицу
     # port = int(os.environ.get("PORT", 80))
     # app.run(host='0.0.0.0', port=port)
     app.run('127.0.0.1', 80)
