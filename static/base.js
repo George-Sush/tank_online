@@ -24,8 +24,25 @@ function repeat_stuff()
     document.getElementById('3').disabled = false;
     document.getElementById('4').disabled = false;
     document.write('<button onclick="complete();">complete</button>');
-
     document.write('<label id="alert_label"></label>');
+    document.write('<br/>');
+    document.write('<button onclick="standart();">стандартная расстановка</button>')
+}
+function standart() {
+    ship_size = 1;
+    put(0, 0);
+    put(0, 9);
+    put(9, 0);
+    put(9, 9);
+    ship_size = 2;
+    put(3, 0);
+    put(0, 2);
+    put(0, 4);
+    ship_size = 3;
+    put(0, 6);
+    put(5, 6);
+    ship_size = 4;
+    put(4, 2)
 }
 function check_ship(x, y) {
     if (available_ships[ship_size] <= 0) return 0;

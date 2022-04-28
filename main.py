@@ -35,7 +35,7 @@ def logout():
 
 @app.route('/base')
 def base():
-    print(current_user)
+    # print(current_user)
     return render_template("/base.html")
 
 
@@ -126,10 +126,10 @@ def session_test():
 def new_game(board):
     json_obj = {}
     board = board.split(",")
-    print(len(board))
+    # print(len(board))
     i_ = iter(board)
     board = list(zip_longest(i_, i_))
-    print(board)
+    # print(board)
     result = []
     for y in range(10):
         res = []
@@ -139,11 +139,11 @@ def new_game(board):
             else:
                 res.append("🟦")  # 🟦 это вода
         result.append(res)
-    print(result)
+    # print(result)
     json_obj["data"] = result
     if len(users_game) == 0:
         users_game.append(current_user.id)
-        print(current_user.id)
+        # print(current_user.id)
         users_b[str(current_user.id)] = json_obj  # result
         return redirect("/wait")  # "wait.html")
     else:
@@ -151,7 +151,7 @@ def new_game(board):
         if user2 == current_user.id:
             print("id Совпадают")
             return "id Совпадают"
-        print(user2, current_user.id)
+        # print(user2, current_user.id)
         create_game(current_user.id, user2, json_obj)  # result
         return redirect("/battle")  # сразу активная игра
 
@@ -169,9 +169,9 @@ def need_wait_or_not():
     cur = con.cursor()
     result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
     if len(result) > 0:
-        print(str(users_b[str(current_user.id)]))
+        # print(str(users_b[str(current_user.id)]))
         board = str(users_b[str(current_user.id)])
-        print(board)
+        # print(board)
         cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_2 = {current_user.id}""")
         con.commit()
         # res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
@@ -188,24 +188,47 @@ def need_wait_or_not():
 @app.route("/battle")
 @login_required
 def battle_now():
+    alarm = False
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
-    res = cur.execute(f"""SELECT * FROM games WHERE user_1 = {current_user.id} OR user_2 = {current_user.id}""").fetchall()
+    res = cur.execute(f"""SELECT * 
+                      FROM games 
+                      WHERE user_1 = {current_user.id} 
+                      OR user_2 = {current_user.id}""").fetchall()
+    res = res[0]
+    print(res)
+    if res[4] is None:
+        return render_template("another_wait.html")
     if res[1] == current_user.id:
         if res[-1]:
             flag = True
         else:
             flag = False
-        board = res[3]
-        board_another = res[4]
+        board = eval(res[3])
+        board_another = eval(res[4])
     else:
         if res[-1]:
             flag = False
         else:
             flag = True
-        board = res[4]
-        board_another = res[3]
-    return render_template("active_game.html", user_board=board, another_user_board=board_another, flag=flag)
+        board = eval(res[4])
+        board_another = eval(res[3])
+    if board is None or board_another is None:
+        alarm = True
+    else:
+        board = board["data"]
+        board_another = board_another["data"]
+    print("Тут пользователь не ждал")
+    print(type(board), board)
+    print(type(board_another), board_another)
+    return render_template("active_game.html", user_board=board, another_user_board=board_another, flag=flag,
+                           alarm=alarm)
+
+
+@app.route("/alarm")
+@login_required
+def alarm_try():
+    return redirect("/battle")
 
 
 @app.route("/start")
@@ -215,9 +238,16 @@ def go():
     cur = con.cursor()
     res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
     result = eval(res[0][0])
-    board = str(users_b[str(current_user.id)])
+    board = users_b[str(current_user.id)]
     cur.close()
-    return render_template("active_game.html", user_board=board, another_user_board=result["data"], flag=False)
+    print("Тут старт пользователя, который ждал")
+    result = result["data"]
+    board = board["data"]
+    print(type(result), result)
+    print(type(board), board)
+
+    return render_template("active_game.html", user_board=board, another_user_board=result, flag=False,
+                           alarm=False)
 
 
 def create_game(user1, user2, board_1):

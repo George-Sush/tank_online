@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        var turn = {{ your_turn }}
+        var field_size = 10;
+        alert("ДА Я РАБОТАЮ");
+        var turn = {{ flag }}
         function repeat_stuff() {
             for (var y = 0; y < field_size; y++) {
                 for (var x = 0; x < field_size; x++){
@@ -36,10 +38,21 @@
         function check_new() {
             window.open("/check_new", "_self");
         }
-        if (!turn) {
-            setTimeout(check_new, 10000);
+        function check_alarm() {
+            window.open("/alarm", "_self");
         }
-        repeat_stuff();
+        alert({{ alarm }});
+        if ({{ alarm }}) {
+            alarm("Всё ок");
+            document.write('<label>Противник найден, но его поле ещё не поступило на сервер.</label>');
+            setTimeout(check_alarm, 10000);
+        } else {
+            alert("NOOOOOOO");
+            if (!turn) {
+                setTimeout(check_new, 10000);
+            }
+            repeat_stuff();
+        }
     </script>
     <title>Title</title>
 </head>
