@@ -185,6 +185,50 @@ def need_wait_or_not():
     return render_template("wait.html", url=url)
 
 
+@app.route("/fire/<coord>")
+@login_required
+def fire_on_coord(coord):
+    x = int(coord.split("_")[0])
+    y = int(coord.split("_")[1])
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * 
+                         FROM games 
+                         WHERE user_1 = {current_user.id} 
+                         OR user_2 = {current_user.id}""").fetchall()
+    res = res[0]
+    if res[1] == current_user.id:
+        board = eval(res[4])
+        new_board = board["data"]
+        if new_board[y][x] == "⬛":
+            new_board[y][x] = "🟥"
+        elif new_board[y][x] == "🟦":
+            new_board[y][x] = "⚪"
+        else:
+            return "Ошибка"
+        board["data"] = new_board
+        cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_1 = {current_user.id}""")
+        con.commit()
+    else:
+        board = eval(res[3])
+        new_board = board["data"]
+        if new_board[y][x] == "⬛":
+            new_board[y][x] = "🟥"
+        elif new_board[y][x] == "🟦":
+            new_board[y][x] = "⚪"
+        else:
+            return "Ошибка"
+        board["data"] = new_board
+        cur.execute(f"""UPDATE games SET field_1 = "{str(board)}" WHERE user_2 = {current_user.id}""")
+        con.commit()
+    if res[-1]:
+        cur.execute(f"""UPDATE games SET flag = {False} WHERE id = {res[0]}""")
+    else:
+        cur.execute(f"""UPDATE games SET flag = {True} WHERE id = {res[0]}""")
+    cur.close()
+    return redirect("/battle")
+
+
 @app.route("/battle")
 @login_required
 def battle_now():

@@ -21,7 +21,7 @@
                     if (turn) {
                         document.getElementById(x+"_2_"+y).disabled = false;
                     }
-                    if (document.getElementById(x+"_2_"+y).innerHTML=="⚪") {
+                    if (document.getElementById(x+"_2_"+y).innerHTML=="⚪" || document.getElementById(x+"_2_"+y).innerHTML=="🟥") {
                         document.getElementById(x+"_2_"+y).disabled = true;
                     }
                 }
