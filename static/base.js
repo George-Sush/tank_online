@@ -1,4 +1,3 @@
-alert("js агружен");
 var ship_size = 1;
 var field_size = 10
 var flag = false;

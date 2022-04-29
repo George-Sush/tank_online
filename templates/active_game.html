@@ -3,56 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        var field_size = 10;
-        alert("ДА Я РАБОТАЮ");
-        var turn = {{ flag }}
-        function repeat_stuff() {
-            for (var y = 0; y < field_size; y++) {
-                for (var x = 0; x < field_size; x++){
-                    document.write('<button id="'+x+'_1_'+y+'";">{{ user_board[y][x] }}</button>');
+    let x = 0;
+    let y = 0;
+    var turn = {{ flag }};
+    function repeat_stuff() {
+        {% for row in user_board %}
+            y = {{ loop.index0 }};
+            {% for square in row %}
+                x = {{ loop.index0 }};
+                document.write('<button id="'+x+'_1_'+y+'";">{{ square }}</button>');
+            {% endfor %}
+            document.write('<label>-----</label>');
+            {% for square in another_user_board[loop.index0] %}
+                x = {{ loop.index0 }};
+                document.write('<button disabled, onclick="fire('+x+','+y+')", id="'+x+'_2_'+y+'";">{{ square }}</button>');
+                if (turn == 1) {
+                    document.getElementById(x+"_2_"+y).disabled = false;
                 }
-                document.write('<label>       </label>');
-                for (var x = 0; x < field_size; x++){
-                    if ({{ another_user_board[y][x] }}=="⬛") {
-                    document.write('<button disabled, onclick="fire('+x+','+y+')", id="'+x+'_2_'+y+'";">🟦</button>');
-                    } else {
-                    document.write('<button disabled, onclick="fire('+x+','+y+')", id="'+x+'_2_'+y+'";">{{ another_user_board[y][x] }}</button>');
-                    }
-                    if (turn) {
-                        document.getElementById(x+"_2_"+y).disabled = false;
-                    }
-                    if (document.getElementById(x+"_2_"+y).innerHTML=="⚪" || document.getElementById(x+"_2_"+y).innerHTML=="🟥") {
-                        document.getElementById(x+"_2_"+y).disabled = true;
-                    }
+                if (document.getElementById(x+"_2_"+y).innerHTML=="⚪" || document.getElementById(x+"_2_"+y).innerHTML=="🟥") {
+                    document.getElementById(x+"_2_"+y).disabled = true;
                 }
-                document.write('<br/>');
-            }
-        }
-        function fire(x, y) {
-            if (turn) {
-                window.open("/fire/"+x+"_"+y, "_self");
-            } else {
-                alert("Сбой, сейчас не ваш ход!");
-            }
-        }
-        function check_new() {
-            window.open("/check_new", "_self");
-        }
-        function check_alarm() {
-            window.open("/alarm", "_self");
-        }
-        alert({{ alarm }});
-        if ({{ alarm }}) {
-            alarm("Всё ок");
-            document.write('<label>Противник найден, но его поле ещё не поступило на сервер.</label>');
-            setTimeout(check_alarm, 10000);
+            {% endfor %}
+            document.write('<br>');
+        {% endfor %}
+    }
+    function fire(x, y) {
+        if (turn == 1) {
+            window.open("/fire/"+x+"_"+y, "_self");
         } else {
-            alert("NOOOOOOO");
-            if (!turn) {
-                setTimeout(check_new, 10000);
-            }
-            repeat_stuff();
+            alert("Сбой, сейчас не ваш ход!");
         }
+    }
+    function check_new() {
+        window.open("/check_new", "_self");
+    }
+    if (turn == 0) {
+        setTimeout(check_new, 10000);
+    }
+    repeat_stuff();
     </script>
     <title>Title</title>
 </head>

@@ -1,4 +1,3 @@
-import json
 from flask import Flask, render_template, redirect, make_response, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
@@ -6,7 +5,6 @@ from itertools import zip_longest
 import sqlite3
 from data.RegisterForm import RegisterForm
 from requests import request
-import os
 from data.users import *
 from data.games import Game
 from data.Login_Form import LoginForm
@@ -126,10 +124,8 @@ def session_test():
 def new_game(board):
     json_obj = {}
     board = board.split(",")
-    # print(len(board))
     i_ = iter(board)
     board = list(zip_longest(i_, i_))
-    # print(board)
     result = []
     for y in range(10):
         res = []
@@ -139,11 +135,9 @@ def new_game(board):
             else:
                 res.append("🟦")  # 🟦 это вода
         result.append(res)
-    # print(result)
     json_obj["data"] = result
     if len(users_game) == 0:
         users_game.append(current_user.id)
-        # print(current_user.id)
         users_b[str(current_user.id)] = json_obj  # result
         return redirect("/wait")  # "wait.html")
     else:
@@ -151,7 +145,6 @@ def new_game(board):
         if user2 == current_user.id:
             print("id Совпадают")
             return "id Совпадают"
-        # print(user2, current_user.id)
         create_game(current_user.id, user2, json_obj)  # result
         return redirect("/battle")  # сразу активная игра
 
@@ -169,18 +162,11 @@ def need_wait_or_not():
     cur = con.cursor()
     result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
     if len(result) > 0:
-        # print(str(users_b[str(current_user.id)]))
         board = str(users_b[str(current_user.id)])
-        # print(board)
         cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_2 = {current_user.id}""")
         con.commit()
-        # res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
-        # print(res[0][0])
-        # result = eval(res[0][0])
-        # print(result)
         cur.close()
         return redirect("/start")
-
     cur.close()
     return render_template("wait.html", url=url)
 
@@ -190,6 +176,7 @@ def need_wait_or_not():
 def fire_on_coord(coord):
     x = int(coord.split("_")[0])
     y = int(coord.split("_")[1])
+    need_change = True
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     res = cur.execute(f"""SELECT * 
@@ -202,7 +189,9 @@ def fire_on_coord(coord):
         new_board = board["data"]
         if new_board[y][x] == "⬛":
             new_board[y][x] = "🟥"
+            need_change = False
         elif new_board[y][x] == "🟦":
+            need_change = True
             new_board[y][x] = "⚪"
         else:
             return "Ошибка"
@@ -214,17 +203,21 @@ def fire_on_coord(coord):
         new_board = board["data"]
         if new_board[y][x] == "⬛":
             new_board[y][x] = "🟥"
+            need_change = False
         elif new_board[y][x] == "🟦":
+            need_change = True
             new_board[y][x] = "⚪"
         else:
             return "Ошибка"
         board["data"] = new_board
         cur.execute(f"""UPDATE games SET field_1 = "{str(board)}" WHERE user_2 = {current_user.id}""")
         con.commit()
-    if res[-1]:
-        cur.execute(f"""UPDATE games SET flag = {False} WHERE id = {res[0]}""")
-    else:
-        cur.execute(f"""UPDATE games SET flag = {True} WHERE id = {res[0]}""")
+    if need_change:
+        if res[-2]:
+            cur.execute(f"""UPDATE games SET flag = {False} WHERE id = {res[0]}""")
+        else:
+            cur.execute(f"""UPDATE games SET flag = {True} WHERE id = {res[0]}""")
+        con.commit()
     cur.close()
     return redirect("/battle")
 
@@ -232,6 +225,7 @@ def fire_on_coord(coord):
 @app.route("/battle")
 @login_required
 def battle_now():
+    someone_win = True
     alarm = False
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
@@ -244,17 +238,17 @@ def battle_now():
     if res[4] is None:
         return render_template("another_wait.html")
     if res[1] == current_user.id:
-        if res[-1]:
-            flag = True
+        if res[-2]:
+            flag = 1
         else:
-            flag = False
+            flag = 0
         board = eval(res[3])
         board_another = eval(res[4])
     else:
-        if res[-1]:
-            flag = False
+        if res[-2]:
+            flag = 0
         else:
-            flag = True
+            flag = 1
         board = eval(res[4])
         board_another = eval(res[3])
     if board is None or board_another is None:
@@ -265,13 +259,45 @@ def battle_now():
     print("Тут пользователь не ждал")
     print(type(board), board)
     print(type(board_another), board_another)
-    return render_template("active_game.html", user_board=board, another_user_board=board_another, flag=flag,
+    board_another_for_send = []
+    for i in board_another:
+        help_list = []
+        for e in i:
+            if e == "⬛":
+                someone_win = False
+                help_list.append("🟦")
+            else:
+                help_list.append(e)
+        board_another_for_send.append(help_list)
+    if someone_win:
+        if current_user.id == res[1]:  # добавить победу
+            cur.execute(f"""UPDATE games SET flag_win = {1} WHERE id = {res[0]}""")
+        else:
+            cur.execute(f"""UPDATE games SET flag_win = {2} WHERE id = {res[0]}""")
+        con.commit()
+        # end_game(res[0])
+        cur.close()
+        return render_template("Победа")
+    cur.close()
+    print(board)
+    print(board_another_for_send)
+    return render_template("active_game.html", user_board=board, another_user_board=board_another_for_send, flag=flag,
                            alarm=alarm)
 
 
-@app.route("/alarm")
+@app.route("/check_new")
 @login_required
-def alarm_try():
+def check_try():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * 
+                          FROM games 
+                          WHERE user_1 = {current_user.id} 
+                          OR user_2 = {current_user.id}""").fetchall()
+    res = res[0]
+    if res[-1] != 0:  # добавить поражение
+        end_game(res[0])
+        return render_template("Проигрыш")
     return redirect("/battle")
 
 
@@ -289,8 +315,16 @@ def go():
     board = board["data"]
     print(type(result), result)
     print(type(board), board)
-
-    return render_template("active_game.html", user_board=board, another_user_board=result, flag=False,
+    board_another_for_send = []
+    for i in result:
+        help_list = []
+        for e in i:
+            if e == "⬛":
+                help_list.append("🟦")
+            else:
+                help_list.append(e)
+        board_another_for_send.append(help_list)
+    return render_template("active_game.html", user_board=board, another_user_board=board_another_for_send, flag=0,
                            alarm=False)
 
 
