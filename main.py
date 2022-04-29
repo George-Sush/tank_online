@@ -33,7 +33,11 @@ def logout():
 
 @app.route('/base')
 def base():
-    # print(current_user)
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
     return render_template("/base.html")
 
 
@@ -60,15 +64,23 @@ def load_user(user_id):
 
 @app.route("/")
 def point():
-    # name = "George"
-    return redirect("/base")  # render_template("menu.html", title="str(coord)", user_name=name)
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
+    return redirect("/base")
 
 
 @app.route("/start_game")
 @login_required
 def start_game():
-    global url
-    return render_template("game_on_ready_first_step.html", url=url)
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
+    return render_template("game_on_ready_first_step.html")
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -108,7 +120,7 @@ def cookie_test():
             "Вы пришли на эту страницу в первый раз за последние 2 года")
         res.set_cookie("visits_count", '1',
                        max_age=60 * 60 * 24 * 365 * 2)
-    return res
+    return res  # не уверен в необходимости данного кода
 
 
 @app.route("/session_test")
@@ -116,12 +128,17 @@ def session_test():
     visits_count = session.get('visits_count', 0)
     session['visits_count'] = visits_count + 1
     return make_response(
-        f"Вы пришли на эту страницу {visits_count + 1} раз")
+        f"Вы пришли на эту страницу {visits_count + 1} раз")  # не уверен в необходимости данного кода
 
 
 @app.route("/new_game/<board>")
 @login_required
 def new_game(board):
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
     json_obj = {}
     board = board.split(",")
     i_ = iter(board)
@@ -158,6 +175,11 @@ def need():
 @app.route("/wait")
 @login_required
 def need_wait_or_not():
+    check = check_process(0)
+    if check == 0:
+        pass
+    else:
+        return check
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     result = cur.execute(f"""SELECT * FROM games WHERE user_2 = {current_user.id}""").fetchall()
@@ -174,9 +196,13 @@ def need_wait_or_not():
 @app.route("/fire/<coord>")
 @login_required
 def fire_on_coord(coord):
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
     x = int(coord.split("_")[0])
     y = int(coord.split("_")[1])
-    need_change = True
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     res = cur.execute(f"""SELECT * 
@@ -184,6 +210,8 @@ def fire_on_coord(coord):
                          WHERE user_1 = {current_user.id} 
                          OR user_2 = {current_user.id}""").fetchall()
     res = res[0]
+    if (current_user.id == res[1] and not res[-2]) or (current_user.id == res[2] and res[-2]):
+        return redirect("/battle")
     if res[1] == current_user.id:
         board = eval(res[4])
         new_board = board["data"]
@@ -225,6 +253,11 @@ def fire_on_coord(coord):
 @app.route("/battle")
 @login_required
 def battle_now():
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
     someone_win = True
     alarm = False
     con = sqlite3.connect("db/users.db")
@@ -277,7 +310,7 @@ def battle_now():
         con.commit()
         # end_game(res[0])
         cur.close()
-        return render_template("Победа")
+        return redirect("/win")
     cur.close()
     print(board)
     print(board_another_for_send)
@@ -285,9 +318,65 @@ def battle_now():
                            alarm=alarm)
 
 
+@app.route("/win")
+@login_required
+def win_check():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * 
+                          FROM games 
+                          WHERE user_1 = {current_user.id} 
+                          OR user_2 = {current_user.id}""").fetchall()
+    if len(res) == 0:
+        return redirect("/base")
+    res = res[0]
+    if res[-1] == 0:
+        return redirect("/battle")
+    else:
+        if (current_user.id == res[1] and res[-1] == 1) or (current_user.id == res[2] and res[-1] == 2):
+            user_id_who_win = current_user.id
+        else:
+            return redirect("/lose")
+    cur.execute(f"""UPDATE users SET game_loses = {current_user.game_wins + 1} WHERE id = {user_id_who_win}""")
+    con.commit()
+    con.close()
+    return render_template("win.html")
+
+
+@app.route("/lose")
+@login_required
+def lose_check():
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * 
+                          FROM games 
+                          WHERE user_1 = {current_user.id} 
+                          OR user_2 = {current_user.id}""").fetchall()
+    if len(res) == 0:
+        return redirect("/base")
+    res = res[0]
+    if res[-1] == 0:
+        return redirect("/battle")
+    else:
+        if (current_user.id == res[1] and res[-1] == 2) or (current_user.id == res[2] and res[-1] == 1):
+            user_id_who_lose = current_user.id
+        else:
+            return redirect("/win")
+    cur.execute(f"""UPDATE users SET game_loses = {current_user.game_loses + 1} WHERE id = {user_id_who_lose}""")
+    con.commit()
+    end_game(res[0])
+    con.close()
+    return render_template("lose.html")
+
+
 @app.route("/check_new")
 @login_required
 def check_try():
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     res = cur.execute(f"""SELECT * 
@@ -296,14 +385,18 @@ def check_try():
                           OR user_2 = {current_user.id}""").fetchall()
     res = res[0]
     if res[-1] != 0:  # добавить поражение
-        end_game(res[0])
-        return render_template("Проигрыш")
+        return redirect("/lose")
     return redirect("/battle")
 
 
 @app.route("/start")
 @login_required
 def go():
+    check = check_process()
+    if check == 0:
+        pass
+    else:
+        return check
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
@@ -339,15 +432,27 @@ def create_game(user1, user2, board_1):
     db_sess.commit()
 
 
-def end_game(id):
+def end_game(id_game):
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     try:
-        cur.execute(f"""DELETE FROM games WHERE id == {id}""")
+        cur.execute(f"""DELETE FROM games WHERE id == {id_game}""")
         con.commit()
     except Exception:
-        print(f"Нет игры с id {id}")
+        print(f"Нет игры с id {id_game}")
     cur.close()
+
+
+def check_process(type_of_key=1):
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * 
+                      FROM games WHERE user_1 = {current_user.id} OR user_2 = {current_user.id}""").fetchall()
+    if len(res) == 0:
+        if
+    if type_of_key == 0:
+
+    return redirect("/")
 
 
 def clear_games_table():

@@ -16,8 +16,8 @@ class User(SqlAlchemyBase, UserMixin):
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     created_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                      default=datetime.datetime.now)
-    game_status = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     game_wins = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    game_loses = sqlalchemy.Column(sqlalchemy.Integer, default=0)
 
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)
