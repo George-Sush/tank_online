@@ -10,6 +10,7 @@ from data.games import Game
 from data.Login_Form import LoginForm
 from data.db_session import global_init, create_session
 import datetime
+winner_list = []
 users_game = []
 users_b = {}
 app = Flask(__name__)
@@ -33,7 +34,7 @@ def logout():
 
 @app.route('/base')
 def base():
-    check = check_process()
+    check = check_process(2)
     if check == 0:
         pass
     else:
@@ -64,18 +65,13 @@ def load_user(user_id):
 
 @app.route("/")
 def point():
-    check = check_process()
-    if check == 0:
-        pass
-    else:
-        return check
     return redirect("/base")
 
 
 @app.route("/start_game")
 @login_required
 def start_game():
-    check = check_process()
+    check = check_process(1)
     if check == 0:
         pass
     else:
@@ -134,11 +130,14 @@ def session_test():
 @app.route("/new_game/<board>")
 @login_required
 def new_game(board):
-    check = check_process()
+    check = check_process(7)
     if check == 0:
         pass
     else:
+        print("тут подстава в new_game")
         return check
+    if len(board) != 79:
+        return redirect("/")
     json_obj = {}
     board = board.split(",")
     i_ = iter(board)
@@ -179,6 +178,7 @@ def need_wait_or_not():
     if check == 0:
         pass
     else:
+        print("Тут подстава в Wait")
         return check
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
@@ -196,13 +196,18 @@ def need_wait_or_not():
 @app.route("/fire/<coord>")
 @login_required
 def fire_on_coord(coord):
-    check = check_process()
+    check = check_process(3)
     if check == 0:
         pass
     else:
         return check
-    x = int(coord.split("_")[0])
-    y = int(coord.split("_")[1])
+    try:
+        if len(coord.split("_")) != 2:
+            return redirect("/battle")
+        x = int(coord.split("_")[0])
+        y = int(coord.split("_")[1])
+    except Exception:
+        return redirect("/battle")
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
     res = cur.execute(f"""SELECT * 
@@ -253,7 +258,7 @@ def fire_on_coord(coord):
 @app.route("/battle")
 @login_required
 def battle_now():
-    check = check_process()
+    check = check_process(4)
     if check == 0:
         pass
     else:
@@ -267,7 +272,6 @@ def battle_now():
                       WHERE user_1 = {current_user.id} 
                       OR user_2 = {current_user.id}""").fetchall()
     res = res[0]
-    print(res)
     if res[4] is None:
         return render_template("another_wait.html")
     if res[1] == current_user.id:
@@ -289,9 +293,9 @@ def battle_now():
     else:
         board = board["data"]
         board_another = board_another["data"]
-    print("Тут пользователь не ждал")
-    print(type(board), board)
-    print(type(board_another), board_another)
+    # print("Тут пользователь не ждал")
+    # print(type(board), board)
+    # print(type(board_another), board_another)
     board_another_for_send = []
     for i in board_another:
         help_list = []
@@ -312,8 +316,8 @@ def battle_now():
         cur.close()
         return redirect("/win")
     cur.close()
-    print(board)
-    print(board_another_for_send)
+    # print(board)
+    # print(board_another_for_send)
     return render_template("active_game.html", user_board=board, another_user_board=board_another_for_send, flag=flag,
                            alarm=alarm)
 
@@ -337,7 +341,7 @@ def win_check():
             user_id_who_win = current_user.id
         else:
             return redirect("/lose")
-    cur.execute(f"""UPDATE users SET game_loses = {current_user.game_wins + 1} WHERE id = {user_id_who_win}""")
+    cur.execute(f"""UPDATE users SET game_wins = {current_user.game_wins + 1} WHERE id = {user_id_who_win}""")
     con.commit()
     con.close()
     return render_template("win.html")
@@ -372,7 +376,7 @@ def lose_check():
 @app.route("/check_new")
 @login_required
 def check_try():
-    check = check_process()
+    check = check_process(6)
     if check == 0:
         pass
     else:
@@ -389,10 +393,40 @@ def check_try():
     return redirect("/battle")
 
 
+@app.route("/afk_alarm")
+@login_required
+def afk():
+    check = check_process(8)
+    if check == 0:
+        pass
+    else:
+        return check
+    con = sqlite3.connect("db/users.db")
+    cur = con.cursor()
+    res = cur.execute(f"""SELECT * 
+                      FROM games 
+                      WHERE user_1 = {current_user.id} 
+                      OR user_2 = {current_user.id}""").fetchall()
+    res = res[0]
+    if current_user.id == res[1]:
+        cur.execute(f"""UPDATE games
+                    SET flag_win = {2} WHERE id = {res[0]}""")
+        winner_list.append(res[2])
+    else:
+        cur.execute(f"""UPDATE games
+                    SET flag_win = {1} WHERE id = {res[0]}""")
+        winner_list.append(res[1])
+    cur.execute(f"""UPDATE users SET game_loses = {current_user.game_loses + 1} WHERE id = {current_user.id}""")
+    con.commit()
+    end_game(res[0])
+    con.close()
+    return render_template("afk_info.html")
+
+
 @app.route("/start")
 @login_required
 def go():
-    check = check_process()
+    check = check_process(5)
     if check == 0:
         pass
     else:
@@ -402,12 +436,13 @@ def go():
     res = cur.execute(f"""SELECT field_1 FROM games WHERE user_2 = {current_user.id}""").fetchall()
     result = eval(res[0][0])
     board = users_b[str(current_user.id)]
+    del users_b[str(current_user.id)]
     cur.close()
-    print("Тут старт пользователя, который ждал")
+    # print("Тут старт пользователя, который ждал")
     result = result["data"]
     board = board["data"]
-    print(type(result), result)
-    print(type(board), board)
+    # print(type(result), result)
+    # print(type(board), board)
     board_another_for_send = []
     for i in result:
         help_list = []
@@ -443,16 +478,101 @@ def end_game(id_game):
     cur.close()
 
 
-def check_process(type_of_key=1):
+def check_process(type_of_key):
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
-    res = cur.execute(f"""SELECT * 
-                      FROM games WHERE user_1 = {current_user.id} OR user_2 = {current_user.id}""").fetchall()
-    if len(res) == 0:
-        if
+    try:
+        res = cur.execute(f"""SELECT * 
+                          FROM games WHERE user_1 = {current_user.id} OR user_2 = {current_user.id}""").fetchall()
+        if len(res) == 0:
+            res = []
+        else:
+            res = res[0]
+    except AttributeError:
+        res = []
     if type_of_key == 0:
-
-    return redirect("/")
+        # print(res)
+        # print(users_b)
+        if str(current_user.id) in users_b and len(res) == 0:
+            # print("Всё ок тест 1")
+            return 0
+        elif str(current_user.id) not in users_b and len(res) == 0:
+            # print("Сломался на тесте 1")
+            return redirect("/")
+        else:
+            if res[4] is None:
+                # print("Всё ок")
+                return 0
+            return redirect("/battle")
+    elif type_of_key == 1:
+        if str(current_user.id) in users_b:
+            return redirect("/wait")
+        if len(res) != 0 and res[4] is not None:
+            return redirect("/battle")
+        return 0
+    elif type_of_key == 2:
+        try:
+            if len(res) == 0 and str(current_user.id) not in users_b:
+                return 0
+            elif str(current_user.id) in users_b:
+                return redirect("/wait")
+            else:
+                return redirect("/battle")
+        except Exception:
+            return 0
+    elif type_of_key == 3:
+        if current_user.id in winner_list:
+            winner_list.remove(current_user.id)
+            cur.execute(f"""UPDATE users SET game_wins = {current_user.game_wins + 1} WHERE id = {current_user.id}""")
+            con.commit()
+            con.close()
+            return render_template("win.html")
+        if len(res) == 0 or str(current_user.id) in users_b:
+            if str(current_user.id) in users_b:
+                # print("11111111111111")
+                return redirect("/wait")
+            # print("2222222222222")
+            return redirect("/")
+        if (current_user.id == res[1] and res[-2]) or (current_user.id == res[2] and not res[-2]):
+            # print("333333333333")
+            return 0
+        else:
+            # print("4444444444444")
+            return redirect("/battle")
+    elif type_of_key == 4:
+        if len(res) == 0:
+            if str(current_user.id) in users_b:
+                return redirect("/wait")
+            return redirect("/")
+        return 0
+    elif type_of_key == 5:
+        if len(res) == 0:
+            return redirect("/")
+        if str(current_user.id) not in users_b:
+            return redirect("/battle")
+        return 0
+    elif type_of_key == 6:
+        if current_user.id in winner_list:
+            winner_list.remove(current_user.id)
+            cur.execute(f"""UPDATE users SET game_wins = {current_user.game_wins + 1} WHERE id = {current_user.id}""")
+            con.commit()
+            con.close()
+            return render_template("win.html")
+        if len(res) == 0:
+            return redirect("/")
+        return 0
+    elif type_of_key == 7:
+        if str(current_user.id) in users_b:
+            return redirect("/wait")
+        if len(res) != 0:
+            return redirect("/battle")
+        return 0
+    elif type_of_key == 8:
+        if len(res) == 0:
+            return redirect("/")
+        if str(current_user.id) in users_b:
+            return redirect("/wait")
+        return 0
 
 
 def clear_games_table():

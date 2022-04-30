@@ -26,6 +26,9 @@
             {% endfor %}
             document.write('<br>');
         {% endfor %}
+        document.write('<br>');
+        document.write('<br>');
+        document.write('<button onclick="afk_alarm();">Хочу добровольно сдаться</button>');
     }
     function fire(x, y) {
         if (turn == 1) {
@@ -37,8 +40,13 @@
     function check_new() {
         window.open("/check_new", "_self");
     }
+    function afk_alarm() {
+        window.open("/afk_alarm", "_self");
+    }
     if (turn == 0) {
-        setTimeout(check_new, 10000);
+        setTimeout(check_new, 5000);
+    } else {
+        setTimeout(afk_alarm, 300000);
     }
     repeat_stuff();
     </script>
