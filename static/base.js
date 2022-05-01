@@ -119,6 +119,9 @@ function complete() {
         +available_ships[3]==0) {
     document.getElementById("alert_label").innerHTML="Вы расставили все корабли";
 //    alert(board);
+//    var go = $.post("http://127.0.0.1:80/postmethod", {
+//    javascript_data: board
+//    });
     window.open("./new_game/"+board,"_self");
     } else {
     document.getElementById("alert_label").innerHTML="Закончите расстановку кораблей";

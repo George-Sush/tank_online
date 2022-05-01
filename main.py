@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, make_response, session
+from flask import request as new_request
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
 from itertools import zip_longest
@@ -127,6 +128,14 @@ def session_test():
         f"Вы пришли на эту страницу {visits_count + 1} раз")  # не уверен в необходимости данного кода
 
 
+# @app.route('/postmethod', methods=['POST'])
+# def get_post_javascript_data():
+#     jsdata = new_request.form['javascript_data']
+#     print("FFFFFFFFFFFFFFFFFFFF")
+#     print(jsdata)
+#     return jsdata
+
+
 @app.route("/new_game/<board>")
 @login_required
 def new_game(board):
@@ -206,7 +215,9 @@ def fire_on_coord(coord):
             return redirect("/battle")
         x = int(coord.split("_")[0])
         y = int(coord.split("_")[1])
-    except Exception:
+        if x < 0 or x > 9 or y < 0 or y > 9:
+            return redirect("/battle")
+    except ValueError:
         return redirect("/battle")
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
@@ -227,10 +238,7 @@ def fire_on_coord(coord):
             need_change = True
             new_board[y][x] = "⚪"
         else:
-            return "Ошибка"
-        board["data"] = new_board
-        cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_1 = {current_user.id}""")
-        con.commit()
+            return redirect("/battle")
     else:
         board = eval(res[3])
         new_board = board["data"]
@@ -241,7 +249,81 @@ def fire_on_coord(coord):
             need_change = True
             new_board[y][x] = "⚪"
         else:
-            return "Ошибка"
+            return redirect("/battle")
+
+    ship = list()
+    min_x = 99
+    max_x = -99
+    min_y = 99
+    max_y = -99
+    ship_bloks = list()
+    ship.append(new_board[y][x])
+    new_x = x
+    while True:
+        new_x += 1
+        if new_x > 9:
+            max_x = 9
+            break
+        if new_board[y][new_x] == "⬛" or new_board[y][new_x] == "🟥":
+            ship.append(tuple([y, new_x]))
+            ship_bloks.append(new_board[y][new_x])
+            if max_x < new_x:
+                max_x = new_x
+        else:
+            max_x = new_x
+            break
+    new_x = x
+    while True:
+        new_x -= 1
+        if new_x < 0:
+            min_x = 0
+            break
+        if new_board[y][new_x] == "⬛" or new_board[y][new_x] == "🟥":
+            ship.append(tuple([y, new_x]))
+            ship_bloks.append(new_board[y][new_x])
+            if min_x > new_x:
+                min_x = new_x
+        else:
+            min_x = new_x
+            break
+    new_y = y
+    while True:
+        new_y += 1
+        if new_y > 9:
+            max_y = 9
+            break
+        if new_board[new_y][x] == "⬛" or new_board[new_y][x] == "🟥":
+            ship.append(tuple([new_y, x]))
+            ship_bloks.append(new_board[new_y][x])
+            if max_y < new_y:
+                max_y = new_y
+        else:
+            max_y = new_y
+            break
+    new_y = y
+    while True:
+        new_y -= 1
+        if new_y < 0:
+            min_y = 0
+            break
+        if new_board[new_y][x] == "⬛" or new_board[new_y][x] == "🟥":
+            ship.append(tuple([new_y, x]))
+            ship_bloks.append(new_board[new_y][x])
+            if min_y > new_y:
+                min_y = new_y
+        else:
+            min_y = new_y
+            break
+    if "⬛" not in ship_bloks and new_board[y][x] != "⚪":
+        for i in range(max([max_y - min_y + 1, 1])):
+            for e in range(max([max_x - min_x + 1, 1])):
+                if new_board[min_y + i][min_x + e] == "🟦":
+                    new_board[min_y + i][min_x + e] = "⚪"
+    if res[1] == current_user.id:
+        board["data"] = new_board
+        cur.execute(f"""UPDATE games SET field_2 = "{str(board)}" WHERE user_1 = {current_user.id}""")
+        con.commit()
+    else:
         board["data"] = new_board
         cur.execute(f"""UPDATE games SET field_1 = "{str(board)}" WHERE user_2 = {current_user.id}""")
         con.commit()
@@ -293,9 +375,6 @@ def battle_now():
     else:
         board = board["data"]
         board_another = board_another["data"]
-    # print("Тут пользователь не ждал")
-    # print(type(board), board)
-    # print(type(board_another), board_another)
     board_another_for_send = []
     for i in board_another:
         help_list = []
@@ -312,12 +391,9 @@ def battle_now():
         else:
             cur.execute(f"""UPDATE games SET flag_win = {2} WHERE id = {res[0]}""")
         con.commit()
-        # end_game(res[0])
         cur.close()
         return redirect("/win")
     cur.close()
-    # print(board)
-    # print(board_another_for_send)
     return render_template("active_game.html", user_board=board, another_user_board=board_another_for_send, flag=flag,
                            alarm=alarm)
 
@@ -438,11 +514,8 @@ def go():
     board = users_b[str(current_user.id)]
     del users_b[str(current_user.id)]
     cur.close()
-    # print("Тут старт пользователя, который ждал")
     result = result["data"]
     board = board["data"]
-    # print(type(result), result)
-    # print(type(board), board)
     board_another_for_send = []
     for i in result:
         help_list = []
@@ -473,7 +546,7 @@ def end_game(id_game):
     try:
         cur.execute(f"""DELETE FROM games WHERE id == {id_game}""")
         con.commit()
-    except Exception:
+    except sqlite3.OperationalError:
         print(f"Нет игры с id {id_game}")
     cur.close()
 
@@ -491,17 +564,12 @@ def check_process(type_of_key):
     except AttributeError:
         res = []
     if type_of_key == 0:
-        # print(res)
-        # print(users_b)
         if str(current_user.id) in users_b and len(res) == 0:
-            # print("Всё ок тест 1")
             return 0
         elif str(current_user.id) not in users_b and len(res) == 0:
-            # print("Сломался на тесте 1")
             return redirect("/")
         else:
             if res[4] is None:
-                # print("Всё ок")
                 return 0
             return redirect("/battle")
     elif type_of_key == 1:
@@ -518,7 +586,7 @@ def check_process(type_of_key):
                 return redirect("/wait")
             else:
                 return redirect("/battle")
-        except Exception:
+        except AttributeError:
             return 0
     elif type_of_key == 3:
         if current_user.id in winner_list:
@@ -529,15 +597,11 @@ def check_process(type_of_key):
             return render_template("win.html")
         if len(res) == 0 or str(current_user.id) in users_b:
             if str(current_user.id) in users_b:
-                # print("11111111111111")
                 return redirect("/wait")
-            # print("2222222222222")
             return redirect("/")
         if (current_user.id == res[1] and res[-2]) or (current_user.id == res[2] and not res[-2]):
-            # print("333333333333")
             return 0
         else:
-            # print("4444444444444")
             return redirect("/battle")
     elif type_of_key == 4:
         if len(res) == 0:
