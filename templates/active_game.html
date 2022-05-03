@@ -27,6 +27,11 @@
             document.write('<br>');
         {% endfor %}
         document.write('<br>');
+        if (turn == 1) {
+            document.write('<label>Сейчас ваш ход</label>');
+        } else {
+            document.write('<label>Сейчас не ваш ход</label>');
+        };
         document.write('<br>');
         document.write('<button onclick="afk_alarm();">Хочу добровольно сдаться</button>');
     }

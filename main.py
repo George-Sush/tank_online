@@ -1,8 +1,9 @@
+import json
 from flask import Flask, render_template, redirect, make_response, session
 from flask import request as new_request
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from data import db_session
-from itertools import zip_longest
+# from itertools import zip_longest
 import sqlite3
 from data.RegisterForm import RegisterForm
 from requests import request
@@ -14,6 +15,7 @@ import datetime
 winner_list = []
 users_game = []
 users_b = {}
+another_user_b = {}
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(
@@ -104,58 +106,40 @@ def reqister():
     return render_template('register.html', title='Регистрация', form=form)
 
 
-@app.route("/cookie_test")
-def cookie_test():
-    visits_count = int(request.cookies.get("visits_count", 0))
-    if visits_count:
-        res = make_response(
-            f"Вы пришли на эту страницу {visits_count + 1} раз")
-        res.set_cookie("visits_count", str(visits_count + 1),
-                       max_age=60 * 60 * 24 * 365 * 2)
-    else:
-        res = make_response(
-            "Вы пришли на эту страницу в первый раз за последние 2 года")
-        res.set_cookie("visits_count", '1',
-                       max_age=60 * 60 * 24 * 365 * 2)
-    return res  # не уверен в необходимости данного кода
-
-
-@app.route("/session_test")
-def session_test():
-    visits_count = session.get('visits_count', 0)
-    session['visits_count'] = visits_count + 1
-    return make_response(
-        f"Вы пришли на эту страницу {visits_count + 1} раз")  # не уверен в необходимости данного кода
-
-
-# @app.route('/postmethod', methods=['POST'])
-# def get_post_javascript_data():
-#     jsdata = new_request.form['javascript_data']
-#     print("FFFFFFFFFFFFFFFFFFFF")
-#     print(jsdata)
-#     return jsdata
-
-
-@app.route("/new_game/<board>")
+@app.route('/postmethod', methods=['POST'])
 @login_required
-def new_game(board):
+def get_post_javascript_data():
+    jsdata = json.loads(new_request.form.to_dict().popitem()[0])
+    another_user_b[str(current_user.id)] = jsdata
+    print(jsdata)
+    print(len(jsdata))
+    return f"<HTML><BODY>{type(jsdata)}: {jsdata}</BODY><HTML>"
+
+
+@app.route("/new_game")
+@login_required
+def new_game():
     check = check_process(7)
     if check == 0:
         pass
     else:
-        print("тут подстава в new_game")
         return check
-    if len(board) != 79:
+    if str(current_user.id) in another_user_b:
+        board = another_user_b[str(current_user.id)]
+        del another_user_b[str(current_user.id)]
+    else:
+        return redirect("/")
+    if len(board) != 20:
         return redirect("/")
     json_obj = {}
-    board = board.split(",")
-    i_ = iter(board)
-    board = list(zip_longest(i_, i_))
+    # board = board.split(",")
+    # i_ = iter(board)
+    # board = list(zip_longest(i_, i_))
     result = []
     for y in range(10):
         res = []
         for x in range(10):
-            if tuple([str(x), str(y)]) in board:
+            if [x, y] in board:
                 res.append("⬛")  # ⬛ это корабль
             else:
                 res.append("🟦")  # 🟦 это вода
@@ -163,14 +147,14 @@ def new_game(board):
     json_obj["data"] = result
     if len(users_game) == 0:
         users_game.append(current_user.id)
-        users_b[str(current_user.id)] = json_obj  # result
-        return redirect("/wait")  # "wait.html")
+        users_b[str(current_user.id)] = json_obj
+        return redirect("/wait")
     else:
         user2 = users_game.pop(0)
         if user2 == current_user.id:
             print("id Совпадают")
             return "id Совпадают"
-        create_game(current_user.id, user2, json_obj)  # result
+        create_game(current_user.id, user2, json_obj)
         return redirect("/battle")  # сразу активная игра
 
 
@@ -187,7 +171,6 @@ def need_wait_or_not():
     if check == 0:
         pass
     else:
-        print("Тут подстава в Wait")
         return check
     con = sqlite3.connect("db/users.db")
     cur = con.cursor()
@@ -250,7 +233,6 @@ def fire_on_coord(coord):
             new_board[y][x] = "⚪"
         else:
             return redirect("/battle")
-
     ship = list()
     min_x = 99
     max_x = -99

@@ -114,18 +114,14 @@ function set_ship_size(size) {
     ship_size = size;
     document.getElementById("alert_label").innerHTML="Корабль длины " + size;
 }
+function go_callback(return_data) {window.open("./new_game","_self");}
 function complete() {
     if (available_ships[4]+available_ships[1]+available_ships[2]
         +available_ships[3]==0) {
     document.getElementById("alert_label").innerHTML="Вы расставили все корабли";
-//    alert(board);
-//    var go = $.post("http://127.0.0.1:80/postmethod", {
-//    javascript_data: board
-//    });
-    window.open("./new_game/"+board,"_self");
+    var go = $.post("./postmethod", JSON.stringify(board), go_callback);
     } else {
     document.getElementById("alert_label").innerHTML="Закончите расстановку кораблей";
-//    alert(board);
     }
 }
 repeat_stuff();
