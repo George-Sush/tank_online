@@ -25,7 +25,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-url = input("input server adres: ")  # "https://batle-ships-online.herokuapp.com/"  # input()
+url = input("input server adres, if you use ngrok: ")  # "https://batle-ships-online.herokuapp.com/"  # input()
 
 
 @app.route('/logout')
